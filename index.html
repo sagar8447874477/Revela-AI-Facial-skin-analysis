@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>REVELA—Facial Skin Analysis</title>
+<title>DermAI — Facial Skin Analysis</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #071409;
-    --surface: #0a1e0d;
-    --card: rgba(8,22,11,0.85);
-    --border: #173320;
-    --border2: #1f4a2b;
-    --text: #cff0d4;
-    --muted: #5d9e6a;
-    --accent: #4ade80;
-    --accent2: #86efac;
+    --bg: #0d0818;
+    --surface: #130d22;
+    --card: rgba(13,8,28,0.82);
+    --border: #2a1a4a;
+    --border2: #3d2870;
+    --text: #f0e8ff;
+    --muted: #9b85c4;
+    --accent: #c084fc;
+    --accent2: #e879f9;
     --gold: #fbbf24;
     --red: #f87171;
     --green: #34d399;
@@ -25,7 +25,7 @@
 
   body {
     font-family: 'IBM Plex Mono', monospace;
-    background: #071409;
+    background: #0d0818;
     color: var(--text);
     min-height: 100vh;
     overflow-x: hidden;
@@ -117,7 +117,7 @@
 
   /* ── API KEY INPUT ── */
   .api-section {
-    background: rgba(8,22,11,0.80); backdrop-filter: blur(12px);
+    background: rgba(13,8,28,0.80); backdrop-filter: blur(12px);
     border: 1px solid var(--border2);
     border-radius: 14px;
     padding: 20px 24px;
@@ -144,7 +144,7 @@
 
   .api-input {
     width: 100%;
-    background: rgba(6,18,9,0.70);
+    background: rgba(10,5,22,0.70);
     border: 1px solid var(--border2);
     border-radius: 8px;
     padding: 10px 14px;
@@ -665,17 +665,18 @@
   .modal-close:hover { background: rgba(192,57,43,0.3); }
 
   .modal-body {
-    overflow-y: auto;
-    padding: 16px;
+    overflow: hidden;
+    padding: 12px;
     flex: 1;
   }
 
-  .modal-img {
+  .modal-iframe {
     width: 100%;
+    height: 75vh;
+    border: none;
     border-radius: 10px;
     display: block;
-    object-fit: contain;
-    max-height: 70vh;
+    background: #0d0818;
   }
 </style>
 </head>
@@ -699,18 +700,11 @@
       <button class="modal-close" onclick="closeExample()">✕</button>
     </div>
     <div class="modal-body">
-      <img
-        src="skin_result_example.jpg"
-        alt="Example skin analysis result"
-        class="modal-img"
-        onerror="this.style.display='none'; document.getElementById('imgFallback').style.display='block';"
-      />
-      <div id="imgFallback" style="display:none; text-align:center; padding:40px 20px; color:var(--muted); font-size:0.72rem; line-height:1.8;">
-        📁 To show your result here:<br><br>
-        1. Save your analysis screenshot as <strong style="color:var(--accent)">skin_result_example.jpg</strong><br>
-        2. Upload it to your GitHub repo alongside <strong style="color:var(--accent)">index.html</strong><br>
-        3. It will automatically appear here
-      </div>
+      <iframe
+        src="skin_diagnosis_map.html"
+        class="modal-iframe"
+        title="Example Skin Analysis Result"
+      ></iframe>
     </div>
   </div>
 </div>
@@ -720,9 +714,8 @@
   <!-- HEADER -->
   <header>
     <div class="logo-badge"><div class="logo-dot"></div> AI-Powered · Dermatology</div>
-    <h1>R E V E L A<br><span class="hl">Facial Skin Analysis</span></h1>
-    <p class="subtitle">Welcome! This is Sagar.
-      Upload clear photos of your face. Our AI dermatology engine will identify and categorize skin conditions with home remedies.</p>
+    <h1>Facial Skin<br><span class="hl">Analysis</span></h1>
+    <p class="subtitle">Upload clear photos of your face. Our AI dermatology engine will identify and categorize skin conditions with home remedies.</p>
   </header>
 
   <!-- API KEY -->
@@ -1072,33 +1065,71 @@ document.addEventListener('keydown', e => {
   let W, H, trees = [], leaves = [], fireflies = [], stars = [];
   let wind = 0, windTarget = 0, t = 0;
 
+  // Rich multi-color palette for trees — each tree gets unique hues
+  const TREE_PALETTES = [
+    // Crimson / Blood red
+    { c1: '#3d0000', c2: '#6b0f0f', c3: '#a01010', trunk: '#1a0500' },
+    // Deep violet
+    { c1: '#1a0038', c2: '#3b0070', c3: '#6a0dad', trunk: '#0d001a' },
+    // Electric teal
+    { c1: '#002b2b', c2: '#005f5f', c3: '#009090', trunk: '#001515' },
+    // Burnt orange
+    { c1: '#2d1000', c2: '#7a2e00', c3: '#c45000', trunk: '#180800' },
+    // Cobalt blue
+    { c1: '#000a2e', c2: '#002080', c3: '#003fcc', trunk: '#000518' },
+    // Deep rose
+    { c1: '#2e0018', c2: '#7a0040', c3: '#c4006a', trunk: '#180010' },
+    // Acid lime
+    { c1: '#0e2200', c2: '#2a5c00', c3: '#4a9900', trunk: '#060f00' },
+    // Gold amber
+    { c1: '#2d1f00', c2: '#7a5200', c3: '#c48a00', trunk: '#170f00' },
+    // Midnight indigo
+    { c1: '#08001f', c2: '#1e0060', c3: '#3800b0', trunk: '#040010' },
+    // Seafoam
+    { c1: '#00261a', c2: '#006644', c3: '#00a870', trunk: '#001510' },
+  ];
+
   function resize() {
     W = canvas.width = window.innerWidth;
     H = canvas.height = window.innerHeight;
     buildScene();
   }
 
-  // ── Sky gradient ──
+  // ── Sky: deep twilight purple-indigo gradient ──
   function drawSky() {
     const sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0,   '#010c03');
-    sky.addColorStop(0.4, '#031807');
-    sky.addColorStop(0.7, '#062510');
-    sky.addColorStop(1,   '#0a3318');
+    sky.addColorStop(0,   '#02000d');
+    sky.addColorStop(0.3, '#080118');
+    sky.addColorStop(0.6, '#0e0525');
+    sky.addColorStop(0.85,'#150830');
+    sky.addColorStop(1,   '#1a0035');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
+
+    // aurora shimmer bands
+    for (let i = 0; i < 3; i++) {
+      const ay = H * (0.15 + i * 0.1) + Math.sin(t * 0.3 + i) * 20;
+      const ag = ctx.createLinearGradient(0, ay - 30, 0, ay + 30);
+      const hue = (200 + i * 50 + t * 5) % 360;
+      ag.addColorStop(0, `hsla(${hue},80%,40%,0)`);
+      ag.addColorStop(0.5, `hsla(${hue},80%,40%,${0.04 + Math.sin(t * 0.5 + i) * 0.02})`);
+      ag.addColorStop(1, `hsla(${hue},80%,40%,0)`);
+      ctx.fillStyle = ag;
+      ctx.fillRect(0, ay - 30, W, 60);
+    }
   }
 
   // ── Stars ──
   function buildStars() {
     stars = [];
-    for (let i = 0; i < 180; i++) {
+    for (let i = 0; i < 220; i++) {
       stars.push({
         x: Math.random() * W,
-        y: Math.random() * H * 0.55,
-        r: Math.random() * 1.2 + 0.2,
+        y: Math.random() * H * 0.6,
+        r: Math.random() * 1.4 + 0.2,
         twinkle: Math.random() * Math.PI * 2,
-        speed: Math.random() * 0.02 + 0.005
+        speed: Math.random() * 0.025 + 0.005,
+        hue: Math.random() < 0.3 ? 200 + Math.random() * 160 : 60
       });
     }
   }
@@ -1106,211 +1137,224 @@ document.addEventListener('keydown', e => {
   function drawStars() {
     stars.forEach(s => {
       s.twinkle += s.speed;
-      const alpha = 0.4 + Math.sin(s.twinkle) * 0.4;
+      const alpha = 0.3 + Math.sin(s.twinkle) * 0.45;
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(200,255,210,${alpha})`;
+      ctx.fillStyle = `hsla(${s.hue},60%,90%,${alpha})`;
       ctx.fill();
     });
   }
 
-  // ── Moon ──
+  // ── Moon — glowing purple-white ──
   function drawMoon() {
-    const mx = W * 0.78, my = H * 0.12, mr = 38;
-    // glow
-    const glow = ctx.createRadialGradient(mx, my, mr * 0.5, mx, my, mr * 3);
-    glow.addColorStop(0, 'rgba(180,255,200,0.18)');
-    glow.addColorStop(1, 'rgba(180,255,200,0)');
-    ctx.fillStyle = glow;
+    const mx = W * 0.76, my = H * 0.11, mr = 36;
+    // outer halo
+    const halo = ctx.createRadialGradient(mx, my, mr, mx, my, mr * 4.5);
+    halo.addColorStop(0, 'rgba(200,160,255,0.20)');
+    halo.addColorStop(0.5, 'rgba(160,100,255,0.07)');
+    halo.addColorStop(1, 'rgba(160,100,255,0)');
+    ctx.fillStyle = halo;
     ctx.beginPath();
-    ctx.arc(mx, my, mr * 3, 0, Math.PI * 2);
+    ctx.arc(mx, my, mr * 4.5, 0, Math.PI * 2);
     ctx.fill();
-    // moon disc
+    // disc
     ctx.beginPath();
     ctx.arc(mx, my, mr, 0, Math.PI * 2);
-    ctx.fillStyle = '#d4fce0';
+    ctx.fillStyle = '#e8d5ff';
     ctx.fill();
-    // crescent shadow
+    // crescent
     ctx.beginPath();
-    ctx.arc(mx + 10, my - 4, mr * 0.88, 0, Math.PI * 2);
-    ctx.fillStyle = '#031807';
+    ctx.arc(mx + 12, my - 5, mr * 0.85, 0, Math.PI * 2);
+    ctx.fillStyle = '#04000f';
     ctx.fill();
   }
 
-  // ── Ground mist ──
+  // ── Ground mist in purple tones ──
   function drawMist() {
-    for (let layer = 0; layer < 3; layer++) {
-      const y = H * (0.72 + layer * 0.08);
-      const grad = ctx.createLinearGradient(0, y - 40, 0, y + 50);
-      grad.addColorStop(0, 'rgba(30,90,45,0)');
-      grad.addColorStop(0.5, `rgba(20,70,35,${0.12 + layer * 0.06})`);
-      grad.addColorStop(1, 'rgba(10,40,20,0)');
+    for (let layer = 0; layer < 4; layer++) {
+      const y = H * (0.70 + layer * 0.06) + Math.sin(t * 0.2 + layer) * 5;
+      const grad = ctx.createLinearGradient(0, y - 45, 0, y + 55);
+      grad.addColorStop(0, 'rgba(80,20,120,0)');
+      grad.addColorStop(0.5, `rgba(60,10,100,${0.10 + layer * 0.05})`);
+      grad.addColorStop(1, 'rgba(40,5,80,0)');
       ctx.fillStyle = grad;
-      ctx.fillRect(0, y - 40, W, 90);
+      ctx.fillRect(0, y - 45, W, 100);
     }
   }
 
-  // ── Tree builder ──
+  // ── Build all trees with palette assignment ──
   function buildScene() {
     buildStars();
     trees = [];
     leaves = [];
     fireflies = [];
 
-    // background trees (far, small, many)
-    for (let i = 0; i < 28; i++) {
+    let treeIndex = 0;
+
+    // far background trees
+    for (let i = 0; i < 26; i++) {
+      const pal = TREE_PALETTES[treeIndex % TREE_PALETTES.length];
+      treeIndex++;
       trees.push({
-        x: (i / 28) * W * 1.05 - W * 0.02,
-        baseY: H * (0.62 + Math.random() * 0.06),
-        h: H * (0.22 + Math.random() * 0.14),
-        w: 18 + Math.random() * 18,
+        x: (i / 26) * W * 1.06 - W * 0.03,
+        baseY: H * (0.60 + Math.random() * 0.06),
+        h: H * (0.20 + Math.random() * 0.13),
+        w: 16 + Math.random() * 16,
         layers: 4 + Math.floor(Math.random() * 3),
-        color1: `hsl(${130 + Math.random()*20},${40 + Math.random()*20}%,${10 + Math.random()*8}%)`,
-        color2: `hsl(${128 + Math.random()*18},${35 + Math.random()*20}%,${14 + Math.random()*8}%)`,
+        pal,
         sway: Math.random() * Math.PI * 2,
         swaySpeed: 0.003 + Math.random() * 0.004,
-        swayAmt: 0.6 + Math.random() * 0.8,
-        depth: 0  // far
+        swayAmt: 0.5 + Math.random() * 0.8,
+        depth: 0
       });
     }
 
     // mid trees
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 16; i++) {
+      const pal = TREE_PALETTES[treeIndex % TREE_PALETTES.length];
+      treeIndex++;
       trees.push({
-        x: (i / 18) * W * 1.1 - W * 0.05,
-        baseY: H * (0.70 + Math.random() * 0.06),
-        h: H * (0.32 + Math.random() * 0.18),
-        w: 28 + Math.random() * 28,
+        x: (i / 16) * W * 1.10 - W * 0.05,
+        baseY: H * (0.68 + Math.random() * 0.06),
+        h: H * (0.30 + Math.random() * 0.18),
+        w: 26 + Math.random() * 28,
         layers: 5 + Math.floor(Math.random() * 3),
-        color1: `hsl(${125 + Math.random()*20},${45 + Math.random()*20}%,${12 + Math.random()*9}%)`,
-        color2: `hsl(${120 + Math.random()*20},${40 + Math.random()*20}%,${16 + Math.random()*10}%)`,
+        pal,
         sway: Math.random() * Math.PI * 2,
         swaySpeed: 0.004 + Math.random() * 0.005,
-        swayAmt: 1.0 + Math.random() * 1.2,
+        swayAmt: 0.9 + Math.random() * 1.2,
         depth: 1
       });
     }
 
-    // foreground trees (close, big, fewer)
-    const fgPositions = [0.0, 0.08, 0.18, 0.30, 0.44, 0.55, 0.67, 0.78, 0.88, 0.97];
-    fgPositions.forEach(p => {
+    // foreground trees
+    const fgPos = [0.0,0.07,0.16,0.27,0.38,0.49,0.60,0.71,0.82,0.92,1.0];
+    fgPos.forEach(p => {
+      const pal = TREE_PALETTES[treeIndex % TREE_PALETTES.length];
+      treeIndex++;
       trees.push({
-        x: p * W + (Math.random() - 0.5) * 40,
-        baseY: H * (0.80 + Math.random() * 0.08),
-        h: H * (0.45 + Math.random() * 0.25),
-        w: 38 + Math.random() * 45,
-        layers: 6 + Math.floor(Math.random() * 3),
-        color1: `hsl(${118 + Math.random()*22},${50 + Math.random()*20}%,${8 + Math.random()*10}%)`,
-        color2: `hsl(${115 + Math.random()*22},${42 + Math.random()*20}%,${13 + Math.random()*12}%)`,
+        x: p * W + (Math.random() - 0.5) * 35,
+        baseY: H * (0.78 + Math.random() * 0.08),
+        h: H * (0.44 + Math.random() * 0.28),
+        w: 36 + Math.random() * 48,
+        layers: 6 + Math.floor(Math.random() * 4),
+        pal,
         sway: Math.random() * Math.PI * 2,
         swaySpeed: 0.005 + Math.random() * 0.006,
-        swayAmt: 1.5 + Math.random() * 2.0,
+        swayAmt: 1.4 + Math.random() * 2.2,
         depth: 2
       });
     });
 
-    // floating leaves
-    for (let i = 0; i < 35; i++) {
-      leaves.push(newLeaf(true));
-    }
+    // leaves — colored to match random tree palettes
+    for (let i = 0; i < 40; i++) leaves.push(newLeaf(true));
 
-    // fireflies
-    for (let i = 0; i < 22; i++) {
+    // fireflies — colored in palette hues
+    for (let i = 0; i < 28; i++) {
+      const hue = 220 + Math.random() * 200;
       fireflies.push({
         x: Math.random() * W,
-        y: H * 0.45 + Math.random() * H * 0.35,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.3,
+        y: H * 0.42 + Math.random() * H * 0.38,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.35,
         phase: Math.random() * Math.PI * 2,
-        speed: 0.03 + Math.random() * 0.04,
-        size: 1.5 + Math.random() * 2
+        speed: 0.025 + Math.random() * 0.045,
+        size: 1.5 + Math.random() * 2.2,
+        hue
       });
     }
   }
 
   function newLeaf(random) {
+    const pal = TREE_PALETTES[Math.floor(Math.random() * TREE_PALETTES.length)];
     return {
       x: random ? Math.random() * W : (Math.random() > 0.5 ? -10 : W + 10),
-      y: H * 0.3 + Math.random() * H * 0.5,
-      vx: (wind * 0.3) + (Math.random() - 0.5) * 0.8,
-      vy: 0.3 + Math.random() * 0.5,
+      y: H * 0.25 + Math.random() * H * 0.55,
+      vx: wind * 0.3 + (Math.random() - 0.5) * 0.9,
+      vy: 0.25 + Math.random() * 0.55,
       rot: Math.random() * Math.PI * 2,
-      rotSpeed: (Math.random() - 0.5) * 0.06,
-      size: 3 + Math.random() * 5,
-      alpha: 0.5 + Math.random() * 0.5,
-      color: `hsl(${110 + Math.random()*40},${50+Math.random()*30}%,${20+Math.random()*25}%)`
+      rotSpeed: (Math.random() - 0.5) * 0.07,
+      size: 3 + Math.random() * 6,
+      alpha: 0.45 + Math.random() * 0.5,
+      color: pal.c3
     };
   }
 
-  // ── Draw a pine/conifer tree ──
+  // ── Draw a colorful pine tree ──
   function drawTree(tree) {
     tree.sway += tree.swaySpeed;
-    const sw = Math.sin(tree.sway) * tree.swayAmt * (1 + wind * 0.5);
+    const sw = Math.sin(tree.sway) * tree.swayAmt * (1 + Math.abs(wind) * 0.6);
+    const { pal } = tree;
 
     ctx.save();
-    ctx.translate(tree.x + sw * (tree.depth + 1) * 0.4, tree.baseY);
+    ctx.translate(tree.x + sw * (tree.depth + 1) * 0.35, tree.baseY);
 
     // trunk
-    const trunkH = tree.h * 0.12;
-    const trunkW = tree.w * 0.08;
-    ctx.fillStyle = `hsl(25,30%,${8 + tree.depth * 3}%)`;
+    const trunkH = tree.h * 0.13;
+    const trunkW = tree.w * 0.075;
+    ctx.fillStyle = pal.trunk;
     ctx.fillRect(-trunkW / 2, 0, trunkW, trunkH);
 
-    // foliage layers (triangle stacks)
+    // foliage layers
     const layerH = tree.h / tree.layers;
     for (let l = 0; l < tree.layers; l++) {
       const progress = l / tree.layers;
-      const ly = -l * layerH * 0.75;
-      const lw = tree.w * (1 - progress * 0.55);
-      const lh = layerH * 1.3;
+      const ly = -l * layerH * 0.78;
+      const lw = tree.w * (1 - progress * 0.58);
+      const lh = layerH * 1.35;
+      const lsw = sw * (l / tree.layers) * (tree.depth + 1) * 0.7;
 
-      // slight per-layer sway offset for organic feel
-      const lsw = sw * (l / tree.layers) * (tree.depth + 1);
-
-      const grad = ctx.createLinearGradient(-lw, ly, lw, ly + lh);
-      grad.addColorStop(0, tree.color2);
-      grad.addColorStop(0.5, tree.color1);
-      grad.addColorStop(1, tree.color2);
+      // gradient from dark base to bright tip color
+      const grad = ctx.createLinearGradient(-lw * 0.5, ly, lw * 0.5, ly - lh);
+      grad.addColorStop(0, pal.c1);
+      grad.addColorStop(0.5, pal.c2);
+      grad.addColorStop(1, pal.c3);
 
       ctx.beginPath();
       ctx.moveTo(lsw, ly - lh);
-      ctx.lineTo(lw + lsw * 0.3, ly + lh * 0.2);
-      ctx.lineTo(-lw + lsw * 0.3, ly + lh * 0.2);
+      ctx.lineTo(lw + lsw * 0.25, ly + lh * 0.18);
+      ctx.lineTo(-lw + lsw * 0.25, ly + lh * 0.18);
       ctx.closePath();
       ctx.fillStyle = grad;
       ctx.fill();
+
+      // bright edge glow on top layer
+      if (l === tree.layers - 1) {
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = pal.c3;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
     }
 
     ctx.restore();
   }
 
-  // ── Draw fireflies ──
+  // ── Draw colored fireflies ──
   function drawFireflies() {
     fireflies.forEach(f => {
       f.phase += f.speed;
-      f.x += f.vx + wind * 0.15;
+      f.x += f.vx + wind * 0.18;
       f.y += f.vy;
       if (f.x < -20) f.x = W + 20;
       if (f.x > W + 20) f.x = -20;
-      if (f.y < H * 0.35) f.vy = Math.abs(f.vy);
-      if (f.y > H * 0.85) f.vy = -Math.abs(f.vy);
+      if (f.y < H * 0.32) f.vy = Math.abs(f.vy);
+      if (f.y > H * 0.88) f.vy = -Math.abs(f.vy);
 
       const alpha = (Math.sin(f.phase) + 1) / 2;
       if (alpha < 0.05) return;
 
-      // glow
-      const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.size * 5);
-      g.addColorStop(0, `rgba(180,255,180,${alpha * 0.7})`);
-      g.addColorStop(1, 'rgba(180,255,180,0)');
+      const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.size * 6);
+      g.addColorStop(0, `hsla(${f.hue},100%,80%,${alpha * 0.8})`);
+      g.addColorStop(1, `hsla(${f.hue},100%,60%,0)`);
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(f.x, f.y, f.size * 5, 0, Math.PI * 2);
+      ctx.arc(f.x, f.y, f.size * 6, 0, Math.PI * 2);
       ctx.fill();
 
-      // dot
       ctx.beginPath();
-      ctx.arc(f.x, f.y, f.size * 0.7, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(220,255,220,${alpha})`;
+      ctx.arc(f.x, f.y, f.size * 0.65, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${f.hue},100%,95%,${alpha})`;
       ctx.fill();
     });
   }
@@ -1318,71 +1362,62 @@ document.addEventListener('keydown', e => {
   // ── Draw leaves ──
   function drawLeaves() {
     leaves.forEach((lf, i) => {
-      lf.x += lf.vx + wind * 0.6;
+      lf.x += lf.vx + wind * 0.65;
       lf.y += lf.vy;
-      lf.rot += lf.rotSpeed + wind * 0.01;
-      lf.vx += (wind - lf.vx) * 0.01;
-
+      lf.rot += lf.rotSpeed + wind * 0.012;
+      lf.vx += (wind - lf.vx) * 0.012;
       if (lf.y > H + 20 || lf.x < -30 || lf.x > W + 30) {
         leaves[i] = newLeaf(false);
         return;
       }
-
       ctx.save();
       ctx.translate(lf.x, lf.y);
       ctx.rotate(lf.rot);
       ctx.globalAlpha = lf.alpha;
       ctx.fillStyle = lf.color;
-      // leaf shape
       ctx.beginPath();
-      ctx.ellipse(0, 0, lf.size, lf.size * 0.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, lf.size, lf.size * 0.45, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
       ctx.restore();
     });
   }
 
-  // ── Ground ──
+  // ── Ground — dark purple earth ──
   function drawGround() {
-    const grad = ctx.createLinearGradient(0, H * 0.82, 0, H);
-    grad.addColorStop(0, '#061409');
-    grad.addColorStop(1, '#020a04');
+    const grad = ctx.createLinearGradient(0, H * 0.80, 0, H);
+    grad.addColorStop(0, '#100520');
+    grad.addColorStop(1, '#050010');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, H * 0.82, W, H);
+    ctx.fillRect(0, H * 0.80, W, H);
 
-    // ground grass bumps
+    // wavy grass silhouette
     ctx.beginPath();
-    for (let x = 0; x <= W; x += 4) {
-      const bump = Math.sin(x * 0.05 + t * 0.3) * 4 + Math.sin(x * 0.02) * 6;
-      if (x === 0) ctx.moveTo(x, H * 0.82 + bump);
-      else ctx.lineTo(x, H * 0.82 + bump);
+    for (let x = 0; x <= W; x += 3) {
+      const bump = Math.sin(x * 0.04 + t * 0.25) * 5 + Math.sin(x * 0.015 + t * 0.1) * 8;
+      if (x === 0) ctx.moveTo(x, H * 0.80 + bump);
+      else ctx.lineTo(x, H * 0.80 + bump);
     }
     ctx.lineTo(W, H);
     ctx.lineTo(0, H);
     ctx.closePath();
-    ctx.fillStyle = '#071a0a';
+    ctx.fillStyle = '#0d0320';
     ctx.fill();
   }
 
   // ── Main loop ──
   function loop() {
     t += 0.016;
-
-    // wind simulation
-    if (Math.random() < 0.005) windTarget = (Math.random() - 0.5) * 3;
-    wind += (windTarget - wind) * 0.008;
+    if (Math.random() < 0.004) windTarget = (Math.random() - 0.5) * 3.5;
+    wind += (windTarget - wind) * 0.007;
 
     drawSky();
     drawStars();
     drawMoon();
 
-    // sort trees by depth (far first)
     const sorted = [...trees].sort((a, b) => a.depth - b.depth);
-
-    // draw far & mid trees
     sorted.filter(tr => tr.depth < 2).forEach(tr => drawTree(tr));
     drawMist();
-    // draw close trees
     sorted.filter(tr => tr.depth === 2).forEach(tr => drawTree(tr));
 
     drawLeaves();
