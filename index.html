@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DermAI — Facial Skin Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050810;
+    --surface: #0c1018;
+    --card: #111620;
+    --border: #1e2535;
+    --border2: #2a3348;
+    --text: #dde4f0;
+    --muted: #6b7a99;
+    --accent: #4fc3f7;
+    --accent2: #a78bfa;
+    --gold: #f0b429;
+    --red: #f87171;
+    --green: #34d399;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,195,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,195,247,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width: 500px; height: 500px; background: rgba(79,195,247,0.05); top: -100px; right: -100px; }
+  .orb2 { width: 400px; height: 400px; background: rgba(167,139,250,0.05); bottom: -100px; left: -100px; }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(79,195,247,0.08);
+    border: 1px solid rgba(79,195,247,0.2);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 0.62rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .logo-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 1.5s infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 6vw, 3.8rem);
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+
+  h1 span.hl { color: var(--accent); font-style: italic; }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.8;
+  }
+
+  /* ── API KEY INPUT ── */
+  .api-section {
+    background: var(--card);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .api-label {
+    font-size: 0.62rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .api-input-wrap {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+
+  .api-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .api-input:focus { border-color: var(--accent); }
+  .api-input::placeholder { color: var(--muted); }
+
+  .api-note {
+    font-size: 0.6rem;
+    color: var(--muted);
+    line-height: 1.5;
+    flex-basis: 100%;
+    padding-top: 4px;
+  }
+
+  .api-note a { color: var(--accent); text-decoration: none; }
+
+  /* ── UPLOAD ZONE ── */
+  .upload-zone {
+    border: 2px dashed var(--border2);
+    border-radius: 16px;
+    padding: 44px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    background: var(--card);
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(79,195,247,0.04);
+  }
+
+  .upload-zone.dragover { transform: scale(1.01); }
+
+  .upload-icon {
+    font-size: 2.8rem;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .upload-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .upload-sub {
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    line-height: 1.7;
+  }
+
+  #fileInput { display: none; }
+
+  /* ── PREVIEW GRID ── */
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .preview-item {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: 1px solid var(--border2);
+    background: var(--card);
+  }
+
+  .preview-item img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .preview-remove {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(248,113,113,0.85);
+    border: none;
+    color: white;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s;
+  }
+  .preview-remove:hover { transform: scale(1.15); }
+
+  /* ── ANALYZE BUTTON ── */
+  .analyze-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #050810;
+    cursor: pointer;
+    transition: all 0.25s;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .analyze-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(79,195,247,0.3);
+  }
+
+  .analyze-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .analyze-btn.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shimmer 1.2s infinite;
+  }
+
+  @keyframes shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+  }
+
+  /* ── RESULTS ── */
+  #results { display: none; }
+  #results.visible { display: block; animation: fadeUp 0.5s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .results-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+  }
+
+  .results-badge {
+    margin-left: auto;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(52,211,153,0.1);
+    border: 1px solid rgba(52,211,153,0.3);
+    color: var(--green);
+  }
+
+  /* condition cards */
+  .conditions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .cond-card {
+    background: var(--card);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+
+  .cond-card:hover { transform: translateY(-3px); }
+
+  .cond-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--c-color);
+  }
+
+  .cond-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .cond-emoji { font-size: 1.6rem; flex-shrink: 0; }
+
+  .cond-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    color: var(--c-color);
+    line-height: 1.2;
+  }
+
+  .cond-type {
+    font-size: 0.58rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .cond-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--c-color);
+    color: var(--c-color);
+    opacity: 0.85;
+    margin-bottom: 10px;
+    width: fit-content;
+  }
+
+  .cond-desc {
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  .cond-remedies {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cond-remedies li {
+    font-size: 0.68rem;
+    color: var(--muted);
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .cond-remedies li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--c-color);
+    font-size: 0.65rem;
+  }
+
+  /* severity bar */
+  .severity-section {
+    background: var(--card);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+
+  .sev-title {
+    font-size: 0.62rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .sev-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 90px;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(30,37,53,0.8);
+    font-size: 0.7rem;
+  }
+
+  .sev-row:last-child { border-bottom: none; }
+  .sev-name { font-weight: 500; }
+  .sev-bar-bg { background: var(--border2); border-radius: 4px; height: 5px; }
+  .sev-bar-fill { height: 5px; border-radius: 4px; transition: width 1s ease; }
+  .sev-lbl { color: var(--muted); font-size: 0.6rem; text-align: right; }
+
+  /* summary box */
+  .summary-box {
+    background: rgba(79,195,247,0.04);
+    border: 1px solid rgba(79,195,247,0.15);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+
+  .summary-label {
+    font-size: 0.6rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .summary-text {
+    font-size: 0.75rem;
+    color: var(--text);
+    line-height: 1.9;
+  }
+
+  /* disclaimer */
+  .disclaimer {
+    background: rgba(248,113,113,0.05);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 0.65rem;
+    color: var(--muted);
+    line-height: 1.8;
+    text-align: center;
+  }
+
+  .disclaimer strong { color: var(--red); }
+
+  /* loading state */
+  .loading-state {
+    text-align: center;
+    padding: 60px 20px;
+    display: none;
+  }
+
+  .loading-state.visible { display: block; }
+
+  .spinner {
+    width: 48px; height: 48px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .loading-steps {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .loading-step {
+    font-size: 0.62rem;
+    color: var(--border2);
+    letter-spacing: 1px;
+    transition: color 0.3s;
+  }
+
+  .loading-step.active { color: var(--accent); }
+  .loading-step.done { color: var(--green); }
+
+  /* error */
+  .error-box {
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.3);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 0.72rem;
+    color: var(--red);
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  @media (max-width: 500px) {
+    .conditions-grid { grid-template-columns: 1fr; }
+    .sev-row { grid-template-columns: 110px 1fr 70px; }
+    .api-section { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="glow-orb orb1"></div>
+<div class="glow-orb orb2"></div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-badge"><div class="logo-dot"></div> AI-Powered · Dermatology</div>
+    <h1>Facial Skin<br><span class="hl">Analysis</span></h1>
+    <p class="subtitle">Upload clear photos of your face. Our AI dermatology engine will identify and categorize skin conditions with home remedies.</p>
+  </header>
+
+  <!-- API KEY -->
+  <div class="api-section">
+    <span class="api-label">🔑 API Key</span>
+    <div class="api-input-wrap">
+      <input type="password" class="api-input" id="apiKey" placeholder="sk-ant-api03-..." />
+    </div>
+    <span class="api-note">
+      Your key is used only in your browser and never stored. Get one free at
+      <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+    </span>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="upload-zone" id="uploadZone">
+    <span class="upload-icon">🔬</span>
+    <div class="upload-title">Drop your photos here</div>
+    <p class="upload-sub">
+      Supports JPG, PNG, WEBP · Up to 5 images<br>
+      For best results: use good lighting, capture forehead, cheeks & chin separately
+    </p>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-grid" id="previewGrid"></div>
+
+  <!-- ERROR -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- ANALYZE BUTTON -->
+  <button class="analyze-btn" id="analyzeBtn" disabled onclick="analyze()">
+    ✦ Analyze My Skin
+  </button>
+
+  <!-- LOADING -->
+  <div class="loading-state" id="loadingState">
+    <div class="spinner"></div>
+    <div class="loading-text">Analyzing your skin...</div>
+    <div class="loading-steps">
+      <div class="loading-step" id="step1">→ Processing uploaded images</div>
+      <div class="loading-step" id="step2">→ Identifying skin conditions</div>
+      <div class="loading-step" id="step3">→ Mapping lesion locations</div>
+      <div class="loading-step" id="step4">→ Generating treatment plan</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="results-header">
+      <div class="results-title">Your Analysis Report</div>
+      <div class="results-badge">✓ Complete</div>
+    </div>
+    <div class="summary-box">
+      <div class="summary-label">AI Summary</div>
+      <div class="summary-text" id="summaryText"></div>
+    </div>
+    <div class="conditions-grid" id="conditionsGrid"></div>
+    <div class="severity-section">
+      <div class="sev-title">Urgency to Seek Dermatologist</div>
+      <div id="severityRows"></div>
+    </div>
+    <div class="disclaimer">
+      <strong>⚠️ Medical Disclaimer:</strong> This AI analysis is for informational purposes only and does not constitute a medical diagnosis. Always consult a licensed dermatologist for professional evaluation and treatment.
+    </div>
+  </div>
+
+</div>
+
+<script>
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const previewGrid = document.getElementById('previewGrid');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const loadingState = document.getElementById('loadingState');
+const resultsDiv = document.getElementById('results');
+const errorBox = document.getElementById('errorBox');
+
+let uploadedFiles = [];
+
+// color palette for conditions
+const COLORS = ['#4fc3f7','#a78bfa','#f0b429','#f87171','#34d399','#fb923c','#e879f9'];
+
+// ── Upload handling ──
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  handleFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => handleFiles([...fileInput.files]));
+
+function handleFiles(files) {
+  const imgs = files.filter(f => f.type.startsWith('image/'));
+  const slots = 5 - uploadedFiles.length;
+  imgs.slice(0, slots).forEach(f => {
+    uploadedFiles.push(f);
+    const reader = new FileReader();
+    reader.onload = ev => addPreview(ev.target.result, uploadedFiles.length - 1);
+    reader.readAsDataURL(f);
+  });
+  updateBtn();
+}
+
+function addPreview(src, idx) {
+  const div = document.createElement('div');
+  div.className = 'preview-item';
+  div.dataset.idx = idx;
+  div.innerHTML = `<img src="${src}"><button class="preview-remove" onclick="removePreview(${idx})">✕</button>`;
+  previewGrid.appendChild(div);
+}
+
+function removePreview(idx) {
+  uploadedFiles.splice(idx, 1);
+  previewGrid.innerHTML = '';
+  uploadedFiles.forEach((f, i) => {
+    const reader = new FileReader();
+    reader.onload = ev => addPreview(ev.target.result, i);
+    reader.readAsDataURL(f);
+  });
+  updateBtn();
+}
+
+function updateBtn() {
+  analyzeBtn.disabled = uploadedFiles.length === 0;
+}
+
+// ── Step animator ──
+let stepTimer;
+function animateSteps() {
+  const steps = ['step1','step2','step3','step4'];
+  let i = 0;
+  steps.forEach(s => { document.getElementById(s).className = 'loading-step'; });
+  stepTimer = setInterval(() => {
+    if (i > 0) document.getElementById(steps[i-1]).className = 'loading-step done';
+    if (i < steps.length) {
+      document.getElementById(steps[i]).className = 'loading-step active';
+      i++;
+    } else {
+      clearInterval(stepTimer);
+    }
+  }, 900);
+}
+
+// ── Main analyze ──
+async function analyze() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { showError('Please enter your Anthropic API key above.'); return; }
+  if (uploadedFiles.length === 0) { showError('Please upload at least one photo.'); return; }
+
+  hideError();
+  analyzeBtn.disabled = true;
+  analyzeBtn.classList.add('loading');
+  loadingState.classList.add('visible');
+  resultsDiv.classList.remove('visible');
+  resultsDiv.style.display = 'none';
+  animateSteps();
+
+  try {
+    // Convert images to base64
+    const imageContents = await Promise.all(uploadedFiles.map(f => fileToBase64Content(f)));
+
+    const prompt = `You are an expert dermatologist. Analyze these facial photos carefully and identify all visible skin conditions such as warts, milia, acne, molluscum contagiosum, sebaceous hyperplasia, skin tags, comedones, or any other dermatological findings.
+
+Respond ONLY with a valid JSON object (no markdown, no backticks) in this exact structure:
+{
+  "summary": "2-3 sentence overall summary of what you observe",
+  "conditions": [
+    {
+      "name": "Condition Name",
+      "type": "e.g. Viral / Keratin Cyst / Inflammatory",
+      "emoji": "appropriate emoji",
+      "location": "where on face e.g. Forehead, Chin",
+      "description": "1-2 sentence description of what it looks like and its cause",
+      "remedies": ["remedy 1", "remedy 2", "remedy 3"],
+      "urgency": 70,
+      "urgencyLabel": "Medium — See dermatologist"
+    }
+  ]
+}
+
+urgency is a number 0-100 (100 = see dermatologist immediately).
+If no significant skin conditions are found, return one condition named "Clear Skin" with low urgency.
+Return only the JSON. No other text.`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: [
+            ...imageContents,
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || `API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const rawText = data.content.map(b => b.text || '').join('');
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    clearInterval(stepTimer);
+    document.getElementById('step4').className = 'loading-step done';
+
+    setTimeout(() => {
+      loadingState.classList.remove('visible');
+      renderResults(result);
+    }, 500);
+
+  } catch (err) {
+    clearInterval(stepTimer);
+    loadingState.classList.remove('visible');
+    analyzeBtn.disabled = false;
+    analyzeBtn.classList.remove('loading');
+    showError('Error: ' + err.message);
+  }
+}
+
+function fileToBase64Content(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1];
+      resolve({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: file.type,
+          data: base64
+        }
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderResults(data) {
+  // Summary
+  document.getElementById('summaryText').textContent = data.summary;
+
+  // Conditions
+  const grid = document.getElementById('conditionsGrid');
+  grid.innerHTML = '';
+  data.conditions.forEach((c, i) => {
+    const color = COLORS[i % COLORS.length];
+    const card = document.createElement('div');
+    card.className = 'cond-card';
+    card.style.setProperty('--c-color', color);
+    card.innerHTML = `
+      <div class="cond-card-top">
+        <span class="cond-emoji">${c.emoji}</span>
+        <div>
+          <div class="cond-name">${c.name}</div>
+          <div class="cond-type">${c.type}</div>
+        </div>
+      </div>
+      <div class="cond-location">📍 ${c.location}</div>
+      <p class="cond-desc">${c.description}</p>
+      <ul class="cond-remedies">
+        ${c.remedies.map(r => `<li>${r}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Severity rows
+  const sevDiv = document.getElementById('severityRows');
+  sevDiv.innerHTML = '';
+  const sorted = [...data.conditions].sort((a,b) => b.urgency - a.urgency);
+  sorted.forEach((c, i) => {
+    const color = COLORS[data.conditions.indexOf(c) % COLORS.length];
+    const row = document.createElement('div');
+    row.className = 'sev-row';
+    row.innerHTML = `
+      <span class="sev-name" style="color:${color}">${c.name}</span>
+      <div class="sev-bar-bg"><div class="sev-bar-fill" style="width:0%;background:${color}" data-width="${c.urgency}%"></div></div>
+      <span class="sev-lbl">${c.urgencyLabel}</span>
+    `;
+    sevDiv.appendChild(row);
+  });
+
+  resultsDiv.style.display = 'block';
+  setTimeout(() => resultsDiv.classList.add('visible'), 50);
+
+  // animate bars
+  setTimeout(() => {
+    document.querySelectorAll('.sev-bar-fill').forEach(bar => {
+      bar.style.width = bar.dataset.width;
+    });
+  }, 200);
+
+  analyzeBtn.disabled = false;
+  analyzeBtn.classList.remove('loading');
+  analyzeBtn.textContent = '✦ Analyze Again';
+  window.scrollTo({ top: document.getElementById('results').offsetTop - 20, behavior: 'smooth' });
+}
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.style.display = 'block';
+}
+
+function hideError() {
+  errorBox.style.display = 'none';
+}
+</script>
+</body>
+</html>
